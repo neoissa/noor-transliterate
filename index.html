@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noor Transliterate 🌟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Amiri&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+            min-height: 100vh;
+        }
+        .arabic-text {
+            font-family: 'Amiri', serif;
+            direction: rtl;
+        }
+        .keyboard-key {
+            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .keyboard-key:active {
+            transform: translateY(2px);
+            background-color: #ecfdf5;
+        }
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 lg:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-800 flex justify-center items-center gap-2">
+                Noor Transliterate 🌟
+            </h1>
+            <p class="text-slate-500 mt-1 italic text-sm md:text-base">Advanced Arabic-to-Latin Transliteration Tool</p>
+        </header>
+
+        <!-- Main Workstation Layout -->
+        <div class="space-y-6">
+            
+            <!-- Dual View: Input and Output side-by-side -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Input Card -->
+                <div class="glass-morphism rounded-2xl p-4 md:p-6 shadow-lg border-b-4 border-emerald-500">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-sm font-semibold text-slate-700">Arabic Input (al-Madkhal al-’Arabi)</label>
+                        <button onclick="clearText()" class="text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-wider transition-colors">
+                            Clear
+                        </button>
+                    </div>
+                    <textarea 
+                        id="arabicInput" 
+                        class="w-full h-40 md:h-48 p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-right text-2xl md:text-3xl arabic-text shadow-inner bg-white/50"
+                        placeholder="اكتب هنا..."
+                    ></textarea>
+                </div>
+
+                <!-- Output Card -->
+                <div class="glass-morphism rounded-2xl p-4 md:p-6 shadow-lg border-b-4 border-blue-500 flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-sm font-semibold text-slate-700">Transliteration (al-Natiq)</label>
+                        <button 
+                            onclick="copyToClipboard()" 
+                            class="px-3 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-full text-xs font-bold border border-blue-200 flex items-center gap-1 transition-all"
+                        >
+                            Copy 📋
+                        </button>
+                    </div>
+                    <div 
+                        id="transliterationOutput" 
+                        class="flex-grow w-full p-4 rounded-xl bg-white/40 border border-slate-100 text-lg md:text-xl text-slate-800 overflow-y-auto italic whitespace-pre-wrap leading-relaxed shadow-inner min-h-[160px]"
+                    >
+                        Waiting for input...
+                    </div>
+                    <div id="copyBadge" class="hidden mt-2 text-center text-emerald-600 text-xs font-bold">
+                        Copied to clipboard! ✅
+                    </div>
+                </div>
+            </div>
+
+            <!-- Keyboard Section -->
+            <div class="glass-morphism rounded-2xl p-4 md:p-6 shadow-lg">
+                <div class="flex items-center gap-2 mb-4 text-slate-700 border-b border-slate-100 pb-2">
+                    <span class="text-lg">⌨️</span>
+                    <span class="text-sm font-semibold uppercase tracking-wide">Arabic Virtual Keyboard</span>
+                </div>
+                <div id="keyboardGrid" class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-1 md:gap-2">
+                    <!-- Keys injected here -->
+                </div>
+                <div class="mt-4 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-[10px] md:text-xs text-blue-800 flex items-start gap-2">
+                    <span class="text-blue-500 font-bold">PRO TIP:</span>
+                    <span>Use the <strong>Harakat</strong> (vowels) on the keyboard for precise pronunciation. For example, add the <em>Kasra</em> (◌ِ) to the end of "Bismillah" to see the "i" appear!</span>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-12 text-center text-slate-400 text-xs space-y-2">
+            <p>“And We have certainly made the Quran easy for remembrance...” (54:17)</p>
+            <p>© Noor Transliterate - Built for Dhikr & Learning</p>
+        </footer>
+    </div>
+
+    <script>
+        const arabicInput = document.getElementById('arabicInput');
+        const output = document.getElementById('transliterationOutput');
+        const keyboardGrid = document.getElementById('keyboardGrid');
+
+        const mapping = {
+            'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'aa', 'ب': 'b', 'ت': 't', 'ث': 'th',
+            'ج': 'j', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z',
+            'س': 's', 'ش': 'sh', 'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'zh', 'ع': '‘',
+            'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n',
+            'ه': 'h', 'و': 'w', 'ي': 'y', 'ة': 'h', 'ى': 'a', 'ء': "'", 'ئ': "'", 'ؤ': "'",
+            '\u064E': 'a', '\u064F': 'u', '\u0650': 'i', '\u0652': '', '\u064B': 'an', 
+            '\u064C': 'un', '\u064D': 'in', ' ': ' ', '،': ',', '؟': '?', '.': '.', '\n': '\n'
+        };
+
+        const keys = [
+            'ض', 'ص', 'ث', 'ق', 'ف', 'غ', 'ع', 'ه', 'خ', 'ح',
+            'ش', 'س', 'ي', 'ب', 'ل', 'ا', 'ت', 'ن', 'م', 'ك',
+            'ظ', 'ط', 'ذ', 'د', 'ز', 'ر', 'و', 'ة', 'ى', 'ء',
+            '\u064E', '\u064F', '\u0650', '\u0651', '\u0652', 'آ', 'أ', 'إ', 'Bksp', 'Space'
+        ];
+
+        function initKeyboard() {
+            keys.forEach(key => {
+                const btn = document.createElement('button');
+                let display = key;
+                if(key === '\u064E') display = '◌َ';
+                if(key === '\u064F') display = '◌ُ';
+                if(key === '\u0650') display = '◌ِ';
+                if(key === '\u0651') display = '◌ّ';
+                if(key === '\u0652') display = '◌ْ';
+
+                const isSpecial = key === 'Bksp' || key === 'Space';
+                btn.className = `keyboard-key p-2 md:p-3 bg-white border-b-2 border-slate-200 rounded-lg shadow-sm font-bold text-sm md:text-lg hover:bg-emerald-50 hover:border-emerald-400 text-slate-700 ${isSpecial ? 'bg-slate-100 col-span-1 text-[10px] md:text-xs' : ''}`;
+                
+                btn.innerText = display;
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    handleKeyPress(key);
+                };
+                keyboardGrid.appendChild(btn);
+            });
+        }
+
+        function handleKeyPress(key) {
+            const start = arabicInput.selectionStart;
+            const end = arabicInput.selectionEnd;
+            const value = arabicInput.value;
+
+            if (key === 'Bksp') {
+                if (start > 0) {
+                    arabicInput.value = value.substring(0, start - 1) + value.substring(end);
+                    arabicInput.selectionStart = arabicInput.selectionEnd = start - 1;
+                }
+            } else if (key === 'Space') {
+                arabicInput.value = value.substring(0, start) + ' ' + value.substring(end);
+                arabicInput.selectionStart = arabicInput.selectionEnd = start + 1;
+            } else {
+                arabicInput.value = value.substring(0, start) + key + value.substring(end);
+                arabicInput.selectionStart = arabicInput.selectionEnd = start + 1;
+            }
+            arabicInput.focus();
+            updateTransliteration();
+        }
+
+        function updateTransliteration() {
+            const text = arabicInput.value;
+            if (!text.trim()) {
+                output.innerText = "Waiting for input...";
+                return;
+            }
+
+            let result = "";
+            let i = 0;
+
+            while (i < text.length) {
+                let char = text[i];
+                let nextChar = text[i + 1];
+
+                if (nextChar === '\u0651') {
+                    let baseChar = mapping[char] || "";
+                    result += baseChar + baseChar;
+                    i += 2;
+                    continue;
+                }
+
+                if (char === 'ا' && nextChar === 'ل') {
+                    if (i === 0 || text[i-1] === ' ') {
+                        result += "Al-";
+                        i += 2;
+                        continue;
+                    }
+                }
+
+                result += mapping[char] || char;
+                i++;
+            }
+
+            result = result.replace(/aa+/g, 'aa'); 
+            output.innerText = result.charAt(0).toUpperCase() + result.slice(1);
+        }
+
+        function clearText() {
+            arabicInput.value = "";
+            updateTransliteration();
+            arabicInput.focus();
+        }
+
+        function copyToClipboard() {
+            const text = output.innerText;
+            if (text === "Waiting for input...") return;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showCopyBadge();
+            }).catch(() => {
+                const el = document.createElement('textarea');
+                el.value = text;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                showCopyBadge();
+            });
+        }
+
+        function showCopyBadge() {
+            const badge = document.getElementById('copyBadge');
+            badge.classList.remove('hidden');
+            setTimeout(() => badge.classList.add('hidden'), 2000);
+        }
+
+        arabicInput.addEventListener('input', updateTransliteration);
+        window.onload = () => {
+            initKeyboard();
+            arabicInput.focus();
+        };
+    </script>
+</body>
+</html>
