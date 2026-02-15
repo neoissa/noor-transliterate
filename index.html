@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Noor Transliterate 🌟</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Amiri&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -30,110 +30,237 @@
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.4);
         }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
+        .active-tab {
+            background-color: #10b981;
+            color: white;
         }
-        ::-webkit-scrollbar-track {
-            background: transparent;
+        .selectable-word {
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
+        .selectable-word:hover {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: #10b981;
         }
+        .suggestion-popup {
+            position: absolute;
+            z-index: 100;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            display: none;
+            min-width: 150px;
+        }
+        .loading-spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: #10b981;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="p-4 md:p-6 lg:p-8">
+<body class="p-3 sm:p-4 md:p-6 lg:p-8">
 
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-800 flex justify-center items-center gap-2">
+        <header class="text-center mb-6">
+            <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800 flex justify-center items-center gap-2">
                 Noor Transliterate 🌟
             </h1>
-            <p class="text-slate-500 mt-1 italic text-sm md:text-base">Advanced Arabic-to-Latin Transliteration Tool</p>
+            <p class="text-slate-500 mt-1 italic text-xs sm:text-sm md:text-base">Advanced Phonetic & AI Intelligence</p>
         </header>
 
-        <!-- Main Workstation Layout -->
+        <!-- Mode Toggle -->
+        <div class="flex justify-center mb-6">
+            <div class="inline-flex rounded-xl shadow-sm bg-white p-1 glass-morphism border border-slate-200">
+                <button id="modeStandard" onclick="setMode('standard')" class="px-4 sm:px-8 py-2 rounded-lg text-sm font-semibold transition-all active-tab">
+                    Standard (ع → abc)
+                </button>
+                <button id="modeArabizi" onclick="setMode('arabizi')" class="px-4 sm:px-8 py-2 rounded-lg text-sm font-semibold transition-all text-slate-500 hover:bg-slate-50">
+                    Arabizi (3rb → ع)
+                </button>
+            </div>
+        </div>
+
+        <!-- AI Assistant Bar -->
+        <div class="flex flex-wrap justify-center gap-3 mb-8">
+            <button onclick="aiRefineText()" class="px-4 py-2 bg-white border border-emerald-200 rounded-full shadow-sm text-sm font-semibold text-emerald-700 hover:bg-emerald-50 transition-all flex items-center gap-2">
+                <span>✨ Smart AI Fix</span>
+            </button>
+            <button onclick="aiReflectText()" class="px-4 py-2 bg-white border border-blue-200 rounded-full shadow-sm text-sm font-semibold text-blue-700 hover:bg-blue-50 transition-all flex items-center gap-2">
+                <span>✨ AI Deep Reflection</span>
+            </button>
+            <button onclick="aiSpeakText()" class="px-4 py-2 bg-white border border-purple-200 rounded-full shadow-sm text-sm font-semibold text-purple-700 hover:bg-purple-50 transition-all flex items-center gap-2">
+                <span>✨ Divine Voice</span>
+            </button>
+        </div>
+
+        <div id="aiLoading" class="hidden flex justify-center mb-6">
+            <div class="flex items-center gap-3 bg-white px-6 py-3 rounded-full shadow-md border border-slate-100">
+                <div class="loading-spinner"></div>
+                <span class="text-sm font-medium text-slate-600 italic" id="aiLoadingText">Consulting Noor AI...</span>
+            </div>
+        </div>
+
         <div class="space-y-6">
-            
-            <!-- Dual View: Input and Output side-by-side -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <!-- Input Card -->
                 <div class="glass-morphism rounded-2xl p-4 md:p-6 shadow-lg border-b-4 border-emerald-500">
                     <div class="flex justify-between items-center mb-3">
-                        <label class="text-sm font-semibold text-slate-700">Arabic Input (al-Madkhal al-’Arabi)</label>
-                        <button onclick="clearText()" class="text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-wider transition-colors">
+                        <label id="inputLabel" class="text-xs sm:text-sm font-semibold text-slate-700 uppercase tracking-wide">Input</label>
+                        <button onclick="clearText()" class="text-[10px] sm:text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-wider">
                             Clear
                         </button>
                     </div>
                     <textarea 
-                        id="arabicInput" 
-                        class="w-full h-40 md:h-48 p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-right text-2xl md:text-3xl arabic-text shadow-inner bg-white/50"
-                        placeholder="اكتب هنا..."
+                        id="mainInput" 
+                        class="w-full h-32 sm:h-40 md:h-48 p-3 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-xl sm:text-2xl md:text-3xl shadow-inner bg-white/50"
+                        placeholder="Type here..."
                     ></textarea>
                 </div>
 
                 <!-- Output Card -->
-                <div class="glass-morphism rounded-2xl p-4 md:p-6 shadow-lg border-b-4 border-blue-500 flex flex-col">
-                    <div class="flex justify-between items-center mb-3">
-                        <label class="text-sm font-semibold text-slate-700">Transliteration (al-Natiq)</label>
-                        <button 
-                            onclick="copyToClipboard()" 
-                            class="px-3 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-full text-xs font-bold border border-blue-200 flex items-center gap-1 transition-all"
-                        >
-                            Copy 📋
-                        </button>
+                <div class="glass-morphism rounded-2xl p-4 md:p-6 shadow-lg border-b-4 border-blue-500 flex flex-col space-y-4 relative">
+                    <!-- Transliteration Output -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Formal Transliteration</label>
+                            <div class="flex gap-3">
+                                <button onclick="copyText('output1')" class="text-[10px] font-bold text-blue-600 hover:underline uppercase">Copy 📋</button>
+                            </div>
+                        </div>
+                        <div id="output1" class="w-full p-3 sm:p-4 rounded-xl bg-white/40 border border-slate-100 text-base sm:text-lg italic whitespace-pre-wrap leading-relaxed shadow-inner min-h-[80px]">
+                            Waiting...
+                        </div>
                     </div>
-                    <div 
-                        id="transliterationOutput" 
-                        class="flex-grow w-full p-4 rounded-xl bg-white/40 border border-slate-100 text-lg md:text-xl text-slate-800 overflow-y-auto italic whitespace-pre-wrap leading-relaxed shadow-inner min-h-[160px]"
-                    >
-                        Waiting for input...
+
+                    <!-- Arabic Script Output -->
+                    <div id="output2Container" class="hidden">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Arabic Script (Click word to fix)</label>
+                            <button onclick="copyText('output2')" class="text-[10px] font-bold text-emerald-600 hover:underline uppercase">Copy 📋</button>
+                        </div>
+                        <div id="output2" class="w-full p-3 sm:p-4 rounded-xl bg-white/40 border border-slate-100 text-2xl sm:text-4xl arabic-text shadow-inner min-h-[100px] flex flex-wrap gap-x-2 gap-y-1 content-start">
+                            -
+                        </div>
                     </div>
-                    <div id="copyBadge" class="hidden mt-2 text-center text-emerald-600 text-xs font-bold">
+
+                    <!-- AI Insights Box -->
+                    <div id="aiInsightsContainer" class="hidden mt-2 p-4 rounded-xl bg-blue-50 border border-blue-100 shadow-sm animate-in fade-in slide-in-from-top-2">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-[10px] font-bold text-blue-800 uppercase tracking-wider">✨ Noor Reflection</span>
+                            <button onclick="document.getElementById('aiInsightsContainer').classList.add('hidden')" class="text-blue-400 hover:text-blue-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
+                        <div id="aiInsightsContent" class="text-xs sm:text-sm text-blue-900 leading-relaxed italic"></div>
+                    </div>
+
+                    <!-- Suggestion Menu -->
+                    <div id="suggestionMenu" class="suggestion-popup overflow-hidden">
+                        <div class="bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-400 border-b flex justify-between">
+                            <span>SMART FIXES</span>
+                            <span class="text-emerald-500">Manual Suggestions</span>
+                        </div>
+                        <div id="suggestionList" class="flex flex-col max-h-60 overflow-y-auto"></div>
+                    </div>
+
+                    <div id="copyBadge" class="hidden text-center text-emerald-600 text-[10px] font-bold animate-pulse">
                         Copied to clipboard! ✅
                     </div>
                 </div>
             </div>
 
             <!-- Keyboard Section -->
-            <div class="glass-morphism rounded-2xl p-4 md:p-6 shadow-lg">
-                <div class="flex items-center gap-2 mb-4 text-slate-700 border-b border-slate-100 pb-2">
-                    <span class="text-lg">⌨️</span>
-                    <span class="text-sm font-semibold uppercase tracking-wide">Arabic Virtual Keyboard</span>
+            <div id="keyboardSection" class="glass-morphism rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg">
+                <div class="flex items-center gap-2 mb-3 sm:mb-4 text-slate-700 border-b border-slate-100 pb-2">
+                    <span class="text-base sm:text-lg">⌨️</span>
+                    <span class="text-[10px] sm:text-sm font-semibold uppercase tracking-wide">Arabic Virtual Keyboard</span>
                 </div>
-                <div id="keyboardGrid" class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-1 md:gap-2">
-                    <!-- Keys injected here -->
-                </div>
-                <div class="mt-4 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-[10px] md:text-xs text-blue-800 flex items-start gap-2">
-                    <span class="text-blue-500 font-bold">PRO TIP:</span>
-                    <span>Use the <strong>Harakat</strong> (vowels) on the keyboard for precise pronunciation. For example, add the <em>Kasra</em> (◌ِ) to the end of "Bismillah" to see the "i" appear!</span>
-                </div>
+                <div id="keyboardGrid" class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-1 sm:gap-2"></div>
             </div>
         </div>
         
-        <footer class="mt-12 text-center text-slate-400 text-xs space-y-2">
+        <footer class="mt-8 sm:mt-12 text-center text-slate-400 text-[10px] sm:text-xs space-y-2">
             <p>“And We have certainly made the Quran easy for remembrance...” (54:17)</p>
-            <p>© Noor Transliterate - Built for Dhikr & Learning</p>
+            <p>© Noor Transliterate - Built with Noor AI</p>
         </footer>
     </div>
 
     <script>
-        const arabicInput = document.getElementById('arabicInput');
-        const output = document.getElementById('transliterationOutput');
-        const keyboardGrid = document.getElementById('keyboardGrid');
+        const apiKey = "";
+        let currentMode = 'standard';
+        let wordSuggestions = []; 
+        
+        const mainInput = document.getElementById('mainInput');
+        const output1 = document.getElementById('output1');
+        const output2 = document.getElementById('output2');
+        const output2Container = document.getElementById('output2Container');
+        const inputLabel = document.getElementById('inputLabel');
+        const keyboardSection = document.getElementById('keyboardSection');
+        const suggestionMenu = document.getElementById('suggestionMenu');
+        const suggestionList = document.getElementById('suggestionList');
+        const aiLoading = document.getElementById('aiLoading');
+        const aiInsightsContainer = document.getElementById('aiInsightsContainer');
+        const aiInsightsContent = document.getElementById('aiInsightsContent');
 
-        const mapping = {
+        const arToEn = {
             'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'aa', 'ب': 'b', 'ت': 't', 'ث': 'th',
             'ج': 'j', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z',
-            'س': 's', 'ش': 'sh', 'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'zh', 'ع': '‘',
+            'س': 's', 'ش': 'sh', 'ص': 'ṣ', 'ض': 'ḍ', 'ط': 'ṭ', 'ظ': 'ẓ', 'ع': '‘',
             'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n',
             'ه': 'h', 'و': 'w', 'ي': 'y', 'ة': 'h', 'ى': 'a', 'ء': "'", 'ئ': "'", 'ؤ': "'",
-            '\u064E': 'a', '\u064F': 'u', '\u0650': 'i', '\u0652': '', '\u064B': 'an', 
-            '\u064C': 'un', '\u064D': 'in', ' ': ' ', '،': ',', '؟': '?', '.': '.', '\n': '\n'
+            '\u064E': 'a', '\u064F': 'u', '\u0650': 'i', '\u0651': '', '\u0652': ''
         };
+
+        const chatToAr = {
+            "3'": "غ", "3*": "غ", "gh": "غ",
+            "6'": "ظ", "6*": "ظ", "zh": "ظ",
+            "9'": "ض", "9*": "ض", "dh": "ض",
+            "7'": "خ", "7*": "خ", "kh": "خ", "5": "خ",
+            "sh": "ش", "ch": "ش", "4": "ش",
+            "th": "ث", "ee": "ي", "oo": "و", "ou": "و", "uu": "و", "aa": "ا",
+            "2": "أ", "3": "ع", "6": "ط", "7": "ح", "8": "ق", "9": "ص",
+            "a": "ا", "b": "ب", "t": "ت", "j": "ج", "d": "د", "r": "ر", "z": "ز",
+            "s": "س", "f": "ف", "k": "ك", "l": "ل", "m": "م", "n": "ن", "h": "ه", 
+            "w": "و", "y": "ي", "i": "ي", "u": "و", "e": "ا", "o": "و"
+        };
+
+        const commonPhrases = {
+            "inshallah": "إن شاء الله",
+            "mashaallah": "ما شاء الله",
+            "hamdullah": "الحمد لله",
+            "alhamdulillah": "الحمد لله",
+            "bismillah": "بسم الله",
+            "subhanallah": "سبحان الله",
+            "astaghfirullah": "أستغفر الله",
+            "allah": "الله",
+            "muhammad": "محمد"
+        };
+
+        const smartGroups = {
+            'س': ['ص', 'ز', 'ث', 'ظ'], 'ص': ['س', 'ض', 'ز'],
+            'ت': ['ط', 'د', 'ث'], 'ط': ['ت', 'ظ', 'ض'],
+            'د': ['ض', 'د', 'ذ'], 'ض': ['د', 'ظ', 'ص'],
+            'ه': ['ح', 'ة', 'ا'], 'ح': ['خ', 'ه', 'ع'],
+            'ك': ['ق', 'ك'], 'ق': ['ك', 'ق'],
+            'ز': ['ذ', 'ظ', 'س'], 'ذ': ['ز', 'ظ', 'د'], 'ظ': ['ذ', 'ز', 'ض', 'ط'],
+            'ع': ['ا', 'ح', 'ء'], 'ا': ['ع', 'ه', 'أ', 'إ', 'ى']
+        };
+
+        const sortedArabiziKeys = Object.keys(chatToAr).sort((a, b) => b.length - a.length);
 
         const keys = [
             'ض', 'ص', 'ث', 'ق', 'ف', 'غ', 'ع', 'ه', 'خ', 'ح',
@@ -142,7 +269,196 @@
             '\u064E', '\u064F', '\u0650', '\u0651', '\u0652', 'آ', 'أ', 'إ', 'Bksp', 'Space'
         ];
 
+        // --- GEMINI API INTEGRATION ---
+
+        async function callGemini(payload, model = 'gemini-2.5-flash-preview-09-2025', isTts = false) {
+            const url = isTts 
+                ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`
+                : `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error('API Error');
+                    return await response.json();
+                } catch (e) {
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                }
+            }
+            throw new Error('All retries failed');
+        }
+
+        async function aiRefineText() {
+            const input = mainInput.value.trim();
+            if (!input) return;
+
+            aiLoading.classList.remove('hidden');
+            document.getElementById('aiLoadingText').innerText = "AI Refinement in progress...";
+
+            const prompt = `Convert the following Arabizi (Arabic chat language) text into perfect, formal Arabic script and provide a precise transliteration: "${input}". 
+            Output the result in strict JSON format with keys "arabic" and "transliteration". Use standard formal transliteration symbols (like ṣ for Sad, etc).`;
+
+            try {
+                const result = await callGemini({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { responseMimeType: "application/json" }
+                });
+
+                const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                
+                // Update local word state
+                const words = data.arabic.split(/\s+/);
+                output2.innerHTML = "";
+                wordSuggestions = words.map(w => ({
+                    current: w,
+                    alternatives: generateAlternatives(w)
+                }));
+
+                words.forEach((w, idx) => {
+                    let span = document.createElement('span');
+                    span.className = "selectable-word";
+                    span.innerText = w;
+                    span.onclick = (e) => showSuggestions(e, idx);
+                    output2.appendChild(span);
+                    output2.appendChild(document.createTextNode(" "));
+                });
+
+                output1.innerText = data.transliteration;
+                if (currentMode === 'arabizi') output2Container.classList.remove('hidden');
+
+            } catch (error) {
+                console.error(error);
+            } finally {
+                aiLoading.classList.add('hidden');
+            }
+        }
+
+        async function aiReflectText() {
+            const input = (currentMode === 'arabizi') 
+                ? wordSuggestions.map(s => s.current).join(" ") 
+                : mainInput.value.trim();
+
+            if (!input || input === "Waiting..." || input === "-") return;
+
+            aiLoading.classList.remove('hidden');
+            document.getElementById('aiLoadingText').innerText = "AI Reflection in progress...";
+
+            const prompt = `Provide a deep linguistic and spiritual reflection on the following Arabic phrase: "${input}". 
+            Explain the root meanings, translation, and significance in an Islamic or Arabic cultural context. Keep it concise but profound.`;
+
+            try {
+                const result = await callGemini({
+                    contents: [{ parts: [{ text: prompt }] }]
+                });
+
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                aiInsightsContent.innerText = text;
+                aiInsightsContainer.classList.remove('hidden');
+
+            } catch (error) {
+                console.error(error);
+            } finally {
+                aiLoading.classList.add('hidden');
+            }
+        }
+
+        async function aiSpeakText() {
+            const input = (currentMode === 'arabizi') 
+                ? wordSuggestions.map(s => s.current).join(" ") 
+                : mainInput.value.trim();
+
+            if (!input || input === "Waiting..." || input === "-") return;
+
+            aiLoading.classList.remove('hidden');
+            document.getElementById('aiLoadingText').innerText = "AI Voice generation...";
+
+            try {
+                const result = await callGemini({
+                    contents: [{ parts: [{ text: `Say clearly in a serene tone: ${input}` }] }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: "Kore" }
+                            }
+                        }
+                    }
+                }, 'gemini-2.5-flash-preview-tts', true);
+
+                const pcmBase64 = result.candidates[0].content.parts[0].inlineData.data;
+                const sampleRate = 24000; // Standard for Gemini TTS
+                
+                // Convert PCM to WAV
+                const binaryString = atob(pcmBase64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+                
+                const wavHeader = createWavHeader(len, sampleRate);
+                const blob = new Blob([wavHeader, bytes], { type: 'audio/wav' });
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                audio.play();
+
+            } catch (error) {
+                console.error(error);
+            } finally {
+                aiLoading.classList.add('hidden');
+            }
+        }
+
+        function createWavHeader(dataLength, sampleRate) {
+            const buffer = new ArrayBuffer(44);
+            const view = new DataView(buffer);
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+            };
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + dataLength, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true); // Mono
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataLength, true);
+            return buffer;
+        }
+
+        // --- END GEMINI API ---
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('modeStandard').classList.toggle('active-tab', mode === 'standard');
+            document.getElementById('modeArabizi').classList.toggle('active-tab', mode === 'arabizi');
+            aiInsightsContainer.classList.add('hidden');
+            
+            if (mode === 'standard') {
+                inputLabel.innerText = "Arabic Script (ع)";
+                mainInput.classList.add('arabic-text');
+                mainInput.style.textAlign = 'right';
+                output2Container.classList.add('hidden');
+                keyboardSection.classList.remove('hidden');
+            } else {
+                inputLabel.innerText = "Arabizi Text (3rb)";
+                mainInput.classList.remove('arabic-text');
+                mainInput.style.textAlign = 'left';
+                output2Container.classList.remove('hidden');
+                keyboardSection.classList.add('hidden');
+            }
+            clearText();
+        }
+
         function initKeyboard() {
+            const grid = document.getElementById('keyboardGrid');
             keys.forEach(key => {
                 const btn = document.createElement('button');
                 let display = key;
@@ -152,110 +468,188 @@
                 if(key === '\u0651') display = '◌ّ';
                 if(key === '\u0652') display = '◌ْ';
 
-                const isSpecial = key === 'Bksp' || key === 'Space';
-                btn.className = `keyboard-key p-2 md:p-3 bg-white border-b-2 border-slate-200 rounded-lg shadow-sm font-bold text-sm md:text-lg hover:bg-emerald-50 hover:border-emerald-400 text-slate-700 ${isSpecial ? 'bg-slate-100 col-span-1 text-[10px] md:text-xs' : ''}`;
-                
+                btn.className = `keyboard-key p-2 sm:p-3 bg-white border-b-2 border-slate-200 rounded-lg shadow-sm font-bold text-sm sm:text-base md:text-lg hover:bg-emerald-50 hover:border-emerald-400 text-slate-700 ${key === 'Bksp' || key === 'Space' ? 'bg-slate-100 col-span-1 text-[8px] sm:text-[10px]' : ''}`;
                 btn.innerText = display;
-                btn.onclick = (e) => {
-                    e.preventDefault();
-                    handleKeyPress(key);
-                };
-                keyboardGrid.appendChild(btn);
+                btn.onclick = () => handleKeyPress(key);
+                grid.appendChild(btn);
             });
         }
 
         function handleKeyPress(key) {
-            const start = arabicInput.selectionStart;
-            const end = arabicInput.selectionEnd;
-            const value = arabicInput.value;
-
+            const start = mainInput.selectionStart;
+            const end = mainInput.selectionEnd;
             if (key === 'Bksp') {
-                if (start > 0) {
-                    arabicInput.value = value.substring(0, start - 1) + value.substring(end);
-                    arabicInput.selectionStart = arabicInput.selectionEnd = start - 1;
-                }
+                mainInput.value = mainInput.value.substring(0, start - 1) + mainInput.value.substring(end);
+                mainInput.selectionStart = mainInput.selectionEnd = start - 1;
             } else if (key === 'Space') {
-                arabicInput.value = value.substring(0, start) + ' ' + value.substring(end);
-                arabicInput.selectionStart = arabicInput.selectionEnd = start + 1;
+                mainInput.value = mainInput.value.substring(0, start) + ' ' + mainInput.value.substring(end);
+                mainInput.selectionStart = mainInput.selectionEnd = start + 1;
             } else {
-                arabicInput.value = value.substring(0, start) + key + value.substring(end);
-                arabicInput.selectionStart = arabicInput.selectionEnd = start + 1;
+                mainInput.value = mainInput.value.substring(0, start) + key + mainInput.value.substring(end);
+                mainInput.selectionStart = mainInput.selectionEnd = start + 1;
             }
-            arabicInput.focus();
-            updateTransliteration();
+            mainInput.focus();
+            process();
         }
 
-        function updateTransliteration() {
-            const text = arabicInput.value;
+        function convertWordToArabic(word) {
+            if (commonPhrases[word]) return commonPhrases[word];
+            let w = "";
+            let j = 0;
+            if (word.startsWith('al-') || word.startsWith('el-')) { w += "ال"; j = 3; }
+            else if (word.startsWith('al') || word.startsWith('el')) { w += "ال"; j = 2; }
+            while(j < word.length) {
+                if (word[j] === word[j+1] && chatToAr[word[j]] && !'aoe'.includes(word[j])) {
+                    w += chatToAr[word[j]] + "\u0651";
+                    j += 2;
+                    continue;
+                }
+                let matched = false;
+                for (const key of sortedArabiziKeys) {
+                    if (word.substr(j, key.length) === key) {
+                        w += chatToAr[key];
+                        j += key.length;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) { w += word[j]; j++; }
+            }
+            return w;
+        }
+
+        function generateAlternatives(arWord) {
+            let alts = new Set();
+            for (let i = 0; i < arWord.length; i++) {
+                let char = arWord[i];
+                if (smartGroups[char]) {
+                    smartGroups[char].forEach(replacement => {
+                        let alt = arWord.substring(0, i) + replacement + arWord.substring(i + 1);
+                        alts.add(alt);
+                    });
+                }
+            }
+            return Array.from(alts);
+        }
+
+        function process() {
+            const text = mainInput.value;
             if (!text.trim()) {
-                output.innerText = "Waiting for input...";
+                output1.innerText = "Waiting...";
+                output2.innerHTML = "-";
+                wordSuggestions = [];
                 return;
             }
 
-            let result = "";
-            let i = 0;
-
-            while (i < text.length) {
-                let char = text[i];
-                let nextChar = text[i + 1];
-
-                if (nextChar === '\u0651') {
-                    let baseChar = mapping[char] || "";
-                    result += baseChar + baseChar;
-                    i += 2;
-                    continue;
-                }
-
-                if (char === 'ا' && nextChar === 'ل') {
-                    if (i === 0 || text[i-1] === ' ') {
-                        result += "Al-";
-                        i += 2;
-                        continue;
+            if (currentMode === 'standard') {
+                let res = "";
+                for (let i = 0; i < text.length; i++) {
+                    let char = text[i];
+                    if (text[i+1] === '\u0651') { 
+                        let b = arToEn[char] || "";
+                        res += b + b; i++; continue;
                     }
+                    if (char === 'ا' && text[i+1] === 'ل' && (i === 0 || text[i-1] === ' ')) {
+                        res += "Al-"; i++; continue;
+                    }
+                    res += arToEn[char] || char;
                 }
-
-                result += mapping[char] || char;
-                i++;
+                output1.innerText = res.charAt(0).toUpperCase() + res.slice(1);
+            } else {
+                let words = text.split(/\s+/);
+                output2.innerHTML = "";
+                wordSuggestions = [];
+                words.forEach((word, idx) => {
+                    if (!word) return;
+                    let primaryAr = convertWordToArabic(word.toLowerCase());
+                    let alts = generateAlternatives(primaryAr);
+                    wordSuggestions.push({ current: primaryAr, alternatives: alts });
+                    let span = document.createElement('span');
+                    span.className = "selectable-word";
+                    span.innerText = primaryAr;
+                    span.onclick = (e) => showSuggestions(e, idx);
+                    output2.appendChild(span);
+                    output2.appendChild(document.createTextNode(" "));
+                });
+                syncFinalTransliteration();
             }
+        }
 
-            result = result.replace(/aa+/g, 'aa'); 
-            output.innerText = result.charAt(0).toUpperCase() + result.slice(1);
+        function showSuggestions(event, wordIdx) {
+            const data = wordSuggestions[wordIdx];
+            suggestionList.innerHTML = "";
+            const currentItem = document.createElement('div');
+            currentItem.className = "px-4 py-2 bg-emerald-50 text-emerald-700 font-bold arabic-text border-b cursor-default";
+            currentItem.innerText = data.current + " (Active)";
+            suggestionList.appendChild(currentItem);
+            if (data.alternatives.length > 0) {
+                data.alternatives.forEach(alt => {
+                    const btn = document.createElement('button');
+                    btn.className = "px-4 py-2 text-left hover:bg-slate-100 arabic-text transition-colors border-b last:border-0";
+                    btn.innerText = alt;
+                    btn.onclick = () => {
+                        selectAlternative(wordIdx, alt);
+                        suggestionMenu.style.display = 'none';
+                    };
+                    suggestionList.appendChild(btn);
+                });
+            }
+            const rect = event.target.getBoundingClientRect();
+            suggestionMenu.style.left = (rect.left) + "px";
+            suggestionMenu.style.top = (window.scrollY + rect.bottom + 5) + "px";
+            suggestionMenu.style.display = 'block';
+            const closeMenu = (e) => {
+                if (!suggestionMenu.contains(e.target) && e.target !== event.target) {
+                    suggestionMenu.style.display = 'none';
+                    document.removeEventListener('click', closeMenu);
+                }
+            };
+            setTimeout(() => document.addEventListener('click', closeMenu), 10);
+        }
+
+        function selectAlternative(idx, newWord) {
+            wordSuggestions[idx].current = newWord;
+            const spans = output2.querySelectorAll('.selectable-word');
+            if (spans[idx]) spans[idx].innerText = newWord;
+            syncFinalTransliteration();
+        }
+
+        function syncFinalTransliteration() {
+            let finalAr = wordSuggestions.map(s => s.current).join(" ");
+            let res = "";
+            for (let i = 0; i < finalAr.length; i++) {
+                let char = finalAr[i];
+                if (char === 'ا' && finalAr[i+1] === 'ل' && (i === 0 || finalAr[i-1] === ' ')) {
+                    res += "Al-"; i++; continue;
+                }
+                if (finalAr[i+1] === '\u0651') {
+                    let letter = arToEn[char] || char;
+                    res += letter + letter; i++; continue;
+                }
+                res += arToEn[char] || char;
+            }
+            output1.innerText = res.charAt(0).toUpperCase() + res.slice(1);
         }
 
         function clearText() {
-            arabicInput.value = "";
-            updateTransliteration();
-            arabicInput.focus();
+            mainInput.value = "";
+            process();
+            aiInsightsContainer.classList.add('hidden');
+            mainInput.focus();
         }
 
-        function copyToClipboard() {
-            const text = output.innerText;
-            if (text === "Waiting for input...") return;
-            
-            navigator.clipboard.writeText(text).then(() => {
-                showCopyBadge();
-            }).catch(() => {
-                const el = document.createElement('textarea');
-                el.value = text;
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
-                document.body.removeChild(el);
-                showCopyBadge();
+        function copyText(id) {
+            const txt = (id === 'output2') ? wordSuggestions.map(s => s.current).join(" ") : document.getElementById(id).innerText;
+            if (txt === "Waiting..." || !txt) return;
+            navigator.clipboard.writeText(txt).then(() => {
+                const b = document.getElementById('copyBadge');
+                b.classList.remove('hidden');
+                setTimeout(() => b.classList.add('hidden'), 2000);
             });
         }
 
-        function showCopyBadge() {
-            const badge = document.getElementById('copyBadge');
-            badge.classList.remove('hidden');
-            setTimeout(() => badge.classList.add('hidden'), 2000);
-        }
-
-        arabicInput.addEventListener('input', updateTransliteration);
-        window.onload = () => {
-            initKeyboard();
-            arabicInput.focus();
-        };
+        mainInput.addEventListener('input', process);
+        window.onload = () => { initKeyboard(); setMode('standard'); };
     </script>
 </body>
 </html>
